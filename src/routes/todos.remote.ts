@@ -1,6 +1,6 @@
 // src/routes/todos.remote.ts
 import { command, query } from '$app/server';
-import { db } from '$lib/server/db';
+import { db } from '$lib/server/db/client';
 import { todos } from '$lib/server/db/schema';
 import { fail } from '@sveltejs/kit';
 import { eq, sql } from 'drizzle-orm';

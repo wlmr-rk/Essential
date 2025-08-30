@@ -1,48 +1,173 @@
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
+	/**
+	 * Todos page (Svelte 5 + Tailwind v4 + daisyUI v5)
+	 * - Optimistic CRUD with clear visual states
+	 * - Svelte transitions/animations (no custom CSS)
+	 * - daisyUI components for consistent UI and less class noise
+	 * - Tailwind utilities only in markup (no @apply)
+	 */
+
+	// Data layer
 	import { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo } from './todos.remote';
 
-	// Clean top-level await - boundary handled by layout
+	// Utils
+	import { nanoid } from 'nanoid';
+
+	// Svelte animations
+	import { fly, fade } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+
+	// -------------------------------------------------------------------------------------
+	// State
+	// -------------------------------------------------------------------------------------
+
 	let todos = $state(await getTodos());
+
+	// UI state
 	let newTodoName = $state('');
 	let error = $state<string | null>(null);
 
-	// inline edit state
+	// Optimistic tracking
+	type OpKind = 'add' | 'toggle' | 'delete' | 'update';
+	let optimisticOps = $state(new Map<string, OpKind>());
+	let rollbackData = $state(new Map<string, any>());
+
+	// Edit state
 	let editingId = $state<string | null>(null);
 	let editText = $state('');
 
+	// Derived: hide items pending delete
+	let displayTodos = $derived(todos.filter((t) => !optimisticOps.has(key('delete', t.id))));
+
+	// -------------------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------------------
+
+	function key(kind: OpKind, id: string) {
+		return `${kind}-${id}`;
+	}
+
+	let errorTimeout: ReturnType<typeof setTimeout> | null = null;
+	function setError(msg: string) {
+		error = msg;
+		if (errorTimeout) clearTimeout(errorTimeout);
+		errorTimeout = setTimeout(() => (error = null), 5000);
+	}
+
+	function optimisticClass(todoId: string): string {
+		if (optimisticOps.has(key('add', todoId))) return 'opacity-70 animate-pulse';
+		if (optimisticOps.has(key('toggle', todoId))) return 'opacity-80';
+		if (optimisticOps.has(key('update', todoId))) return 'opacity-80';
+		if (optimisticOps.has(key('delete', todoId)))
+			return 'opacity-50 scale-95 transition-all duration-300';
+		return '';
+	}
+
+	// -------------------------------------------------------------------------------------
+	// Toasts (Undo delete)
+	// -------------------------------------------------------------------------------------
+
+	type UndoToast = {
+		id: string;
+		name: string;
+		timeoutId: ReturnType<typeof setTimeout>;
+	};
+
+	let undoToasts = $state<UndoToast[]>([]);
+
+	function showUndoToast(todoId: string, todoName: string) {
+		const timeoutId = setTimeout(() => {
+			undoToasts = undoToasts.filter((t) => t.id !== todoId);
+		}, 4000);
+		undoToasts = [...undoToasts, { id: todoId, name: todoName, timeoutId }];
+	}
+
+	function undoDelete(todoId: string) {
+		optimisticOps.delete(key('delete', todoId));
+		const toast = undoToasts.find((t) => t.id === todoId);
+		if (toast) {
+			clearTimeout(toast.timeoutId);
+			undoToasts = undoToasts.filter((t) => t.id !== todoId);
+		}
+	}
+
+	// -------------------------------------------------------------------------------------
+	// Actions (Optimistic)
+	// -------------------------------------------------------------------------------------
+
 	async function handleAddTodo(e: Event) {
 		e.preventDefault();
-		if (!newTodoName.trim()) return;
+		const name = newTodoName.trim();
+		if (!name) return;
+
+		const tempId = `temp-${nanoid()}`;
+		const temp = { id: tempId, name, done: false };
+
+		todos = [...todos, temp];
+		optimisticOps.set(key('add', tempId), 'add');
+		newTodoName = '';
+
 		try {
-			const newTodo = await addTodo({ name: newTodoName });
-			todos = [...todos, newTodo];
-			newTodoName = '';
+			const created = await addTodo({ name });
+			todos = todos.map((t) => (t.id === tempId ? created : t));
+			optimisticOps.delete(key('add', tempId));
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to add todo';
+			todos = todos.filter((t) => t.id !== tempId);
+			optimisticOps.delete(key('add', tempId));
+			newTodoName = name;
+			setError(e instanceof Error ? e.message : 'Failed to add todo');
 		}
 	}
 
 	async function handleToggle(id: string) {
+		const k = key('toggle', id);
+		const current = todos.find((t) => t.id === id);
+		if (!current) return;
+
+		rollbackData.set(k, { ...current });
+		optimisticOps.set(k, 'toggle');
+
+		todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+
 		try {
 			const updated = await toggleTodo({ id });
 			todos = todos.map((t) => (t.id === id ? updated : t));
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to toggle todo';
+			const original = rollbackData.get(k);
+			if (original) todos = todos.map((t) => (t.id === id ? original : t));
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
+			setError(e instanceof Error ? e.message : 'Failed to toggle todo');
 		}
 	}
 
 	async function handleDelete(id: string) {
+		const k = key('delete', id);
+		const current = todos.find((t) => t.id === id);
+		if (!current) return;
+
+		rollbackData.set(k, current);
+		optimisticOps.set(k, 'delete');
+
+		showUndoToast(id, current.name);
+
 		try {
 			await deleteTodo({ id });
 			todos = todos.filter((t) => t.id !== id);
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to delete todo';
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
+			setError(e instanceof Error ? e.message : 'Failed to delete todo');
 		}
 	}
 
-	function startEdit(todoId: string, current: string) {
-		editingId = todoId;
+	function startEdit(id: string, current: string) {
+		editingId = id;
 		editText = current;
 	}
 
@@ -54,12 +179,31 @@
 	async function saveEdit(id: string) {
 		const name = editText.trim();
 		if (!name) return;
+
+		const k = key('update', id);
+		const current = todos.find((t) => t.id === id);
+		if (!current) return;
+
+		rollbackData.set(k, { ...current });
+		optimisticOps.set(k, 'update');
+
+		todos = todos.map((t) => (t.id === id ? { ...t, name } : t));
+		cancelEdit();
+
 		try {
 			const updated = await updateTodo({ id, name });
 			todos = todos.map((t) => (t.id === id ? updated : t));
-			cancelEdit();
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to update todo';
+			const original = rollbackData.get(k);
+			if (original) {
+				todos = todos.map((t) => (t.id === id ? original : t));
+				startEdit(id, original.name);
+			}
+			optimisticOps.delete(k);
+			rollbackData.delete(k);
+			setError(e instanceof Error ? e.message : 'Failed to update todo');
 		}
 	}
 
@@ -74,92 +218,164 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-900 p-8 text-gray-100">
+<!--
+  Layout
+  - Page shell
+  - Toasts (daisyUI toast + alert)
+  - Error alert (daisyUI alert-error)
+  - Add form (daisyUI join)
+  - Todos list (daisyUI list + list-row, keyed + animate:flip)
+  - Footer stats
+-->
+<div class="min-h-screen bg-base-200 p-8 text-base-content">
 	<div class="mx-auto max-w-2xl">
-		<h1 class="mb-8 text-4xl font-bold text-cyan-400">Todo List</h1>
+		<h1 class="mb-8 text-4xl font-bold text-primary">Todo List</h1>
 
-		{#if error}
-			<div class="mb-4 rounded border border-red-500 bg-red-900/50 px-4 py-3 text-red-200">
-				{error}
+		<!-- Undo toasts (daisyUI toast stack, each item flies in/out) -->
+		{#if undoToasts.length > 0}
+			<div class="toast-top toast-end toast z-50">
+				{#each undoToasts as toast (toast.id)}
+					<div
+						in:fly={{ y: -10, duration: 200, opacity: 0 }}
+						out:fly={{ y: -10, duration: 200, opacity: 0 }}
+						class="alert alert-warning"
+						role="status"
+					>
+						<span>Deleted "{toast.name}"</span>
+						<button
+							class="btn btn-outline btn-xs"
+							onclick={() => undoDelete(toast.id)}
+							aria-label={`Undo delete ${toast.name}`}
+						>
+							Undo
+						</button>
+					</div>
+				{/each}
 			</div>
 		{/if}
 
-		<form onsubmit={handleAddTodo} class="mb-6 flex gap-2">
-			<input
-				type="text"
-				bind:value={newTodoName}
-				placeholder="Add a new todo..."
-				class="input flex-1 input-neutral"
-			/>
-			<button type="submit" class="btn btn-neutral"> Add </button>
+		<!-- Error alert (daisyUI alert-error) -->
+		{#if error}
+			<div
+				in:fly={{ y: -10, duration: 200, opacity: 0 }}
+				out:fade={{ duration: 150 }}
+				class="mb-4 alert alert-error"
+				role="alert"
+			>
+				<span>{error}</span>
+			</div>
+		{/if}
+
+		<!-- Add form (daisyUI join for cohesive input+button) -->
+		<form onsubmit={handleAddTodo} class="mb-6">
+			<div class="join w-full">
+				<input
+					type="text"
+					bind:value={newTodoName}
+					placeholder="Add a new todo..."
+					class="input-bordered input join-item w-full input-primary"
+					aria-label="New todo name"
+				/>
+				<button type="submit" class="btn join-item btn-primary" disabled={!newTodoName.trim()}>
+					Add
+				</button>
+			</div>
 		</form>
 
-		{#if todos.length === 0}
-			<div class="py-8 text-center text-gray-500">No todos yet. Add one above!</div>
+		<!-- Todo list (daisyUI list + list-row) -->
+		{#if displayTodos.length === 0}
+			<div class="py-8 text-center text-base-content/60">
+				{todos.length === 0 ? 'No todos yet. Add one above!' : 'All todos completed!'}
+			</div>
 		{:else}
-			<ul class="list">
-				{#each todos as todo (todo.id)}
-					<li class="list-row">
+			<ul class="list space-y-2">
+				{#each displayTodos as todo (todo.id)}
+					<!-- Each item animates with FLIP; group reveals actions on hover -->
+					<li
+						animate:flip
+						class="group list-row items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3 hover:border-base-300/70 {optimisticClass(
+							todo.id
+						)}"
+					>
+						<!-- Checkbox -->
 						<input
 							type="checkbox"
 							class="checkbox checkbox-primary"
 							checked={todo.done}
 							onchange={() => handleToggle(todo.id)}
-							aria-label="toggle"
+							aria-label={`Toggle ${todo.name}`}
 						/>
 
-						<!-- name / edit input -->
-						<div class="flex-1">
+						<!-- Name / edit input (middle column grows) -->
+						<div class="list-col-grow">
 							{#if editingId === todo.id}
 								<!-- svelte-ignore a11y_autofocus -->
 								<input
 									type="text"
 									bind:value={editText}
-									class="input input-sm input-ghost"
+									class="input input-sm w-full input-ghost focus:ring-2 focus:ring-primary/60"
 									onkeydown={(e) => onEditKeydown(e, todo.id)}
 									autofocus
+									aria-label={`Edit name for ${todo.name}`}
 								/>
 							{:else}
-								<span class={todo.done ? 'text-gray-500 line-through' : ''}>
+								<span
+									class="cursor-pointer transition-colors {todo.done
+										? 'text-base-content/60 line-through'
+										: 'hover:text-primary'}"
+									onclick={() => startEdit(todo.id, todo.name)}
+								>
 									{todo.name}
 								</span>
 							{/if}
 						</div>
 
+						<!-- Actions (revealed on row hover) -->
 						{#if editingId === todo.id}
 							<div class="flex gap-2">
 								<button
-									class="rounded bg-cyan-600 px-3 py-1 text-sm font-medium transition-colors hover:bg-cyan-700"
+									class="btn btn-xs btn-primary"
 									onclick={() => saveEdit(todo.id)}
+									disabled={!editText.trim() || editText === todo.name}
 								>
 									Save
 								</button>
-								<button
-									class="rounded bg-gray-700 px-3 py-1 text-sm font-medium transition-colors hover:bg-gray-600"
-									onclick={cancelEdit}
-								>
-									Cancel
-								</button>
+								<button class="btn btn-ghost btn-xs" onclick={cancelEdit}> Cancel </button>
 							</div>
 						{:else}
-							<div class="flex gap-3">
+							<div class="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
 								<button
-									class="text-cyan-400 transition-colors hover:text-cyan-300"
+									class="btn text-primary btn-ghost btn-xs"
 									onclick={() => startEdit(todo.id, todo.name)}
+									aria-label={`Edit ${todo.name}`}
 								>
 									Edit
 								</button>
 								<button
 									onclick={() => handleDelete(todo.id)}
-									class="text-red-400 transition-colors hover:text-red-300"
+									class="btn text-error btn-ghost btn-xs"
+									aria-label={`Delete ${todo.name}`}
 								>
 									Delete
 								</button>
 							</div>
 						{/if}
+
+						<!-- Inline spinner during toggle/update -->
+						{#if optimisticOps.has(`toggle-${todo.id}`) || optimisticOps.has(`update-${todo.id}`)}
+							<span class="loading loading-xs loading-spinner text-primary" aria-label="Loading" />
+						{/if}
 					</li>
 				{/each}
 			</ul>
 		{/if}
+
+		<!-- Stats -->
+		<div
+			class="mt-8 flex justify-between border-t border-base-300 pt-4 text-sm text-base-content/70"
+		>
+			<span>{displayTodos.filter((t) => !t.done).length} remaining</span>
+			<span>{displayTodos.filter((t) => t.done).length} completed</span>
+		</div>
 	</div>
 </div>

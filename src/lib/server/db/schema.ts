@@ -1,8 +1,8 @@
-//src/lib/server/db/schema.ts
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+// src/lib/server/db/schema.ts
+import { boolean, pgTable, text } from 'drizzle-orm/pg-core';
 
-export const todos = sqliteTable('todos', {
-	id: text('id').primaryKey(),
+export const todos = pgTable('todos', {
+	id: text('id').primaryKey(), // use nanoid or UUIDv7 in your app
 	name: text('name').notNull(),
-	done: integer('done', { mode: 'boolean' }).notNull().default(false)
+	done: boolean('done').notNull().default(false)
 });
