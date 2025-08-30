@@ -2,29 +2,14 @@
 <script lang="ts">
 	import { getTodos, addTodo, toggleTodo, deleteTodo, updateTodo } from './todos.remote';
 
-	let todos = $state<Array<{ id: string; name: string; done: boolean }>>([]);
+	// Clean top-level await - boundary handled by layout
+	let todos = $state(await getTodos());
 	let newTodoName = $state('');
-	let loading = $state(true);
 	let error = $state<string | null>(null);
 
 	// inline edit state
 	let editingId = $state<string | null>(null);
 	let editText = $state('');
-
-	$effect(() => {
-		loadTodos();
-	});
-
-	async function loadTodos() {
-		try {
-			loading = true;
-			todos = await getTodos();
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load todos';
-		} finally {
-			loading = false;
-		}
-	}
 
 	async function handleAddTodo(e: Event) {
 		e.preventDefault();
@@ -109,9 +94,7 @@
 			<button type="submit" class="btn btn-neutral"> Add </button>
 		</form>
 
-		{#if loading}
-			<div class="py-8 text-center text-gray-400">Loading...</div>
-		{:else if todos.length === 0}
+		{#if todos.length === 0}
 			<div class="py-8 text-center text-gray-500">No todos yet. Add one above!</div>
 		{:else}
 			<ul class="list">
