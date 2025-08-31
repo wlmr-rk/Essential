@@ -6,6 +6,10 @@
 	 * - Svelte transitions/animations (no custom CSS)
 	 * - daisyUI components for consistent UI and less class noise
 	 * - Tailwind utilities only in markup (no @apply)
+	 *
+	 * Note: We removed cosmetic "in-flight" hints (optimisticClass, spinners)
+	 * because your ops are effectively instant. We keep rollbackData and
+	 * optimisticOps for correctness on failures.
 	 */
 
 	// Data layer
@@ -55,15 +59,6 @@
 		errorTimeout = setTimeout(() => (error = null), 5000);
 	}
 
-	function optimisticClass(todoId: string): string {
-		if (optimisticOps.has(key('add', todoId))) return 'opacity-70 animate-pulse';
-		if (optimisticOps.has(key('toggle', todoId))) return 'opacity-80';
-		if (optimisticOps.has(key('update', todoId))) return 'opacity-80';
-		if (optimisticOps.has(key('delete', todoId)))
-			return 'opacity-50 scale-95 transition-all duration-300';
-		return '';
-	}
-
 	// -------------------------------------------------------------------------------------
 	// Toasts (Undo delete)
 	// -------------------------------------------------------------------------------------
@@ -104,15 +99,18 @@
 		const tempId = `temp-${nanoid()}`;
 		const temp = { id: tempId, name, done: false };
 
+		// Optimistic add
 		todos = [...todos, temp];
 		optimisticOps.set(key('add', tempId), 'add');
 		newTodoName = '';
 
 		try {
 			const created = await addTodo({ name });
+			// Replace temp with server row
 			todos = todos.map((t) => (t.id === tempId ? created : t));
 			optimisticOps.delete(key('add', tempId));
 		} catch (e) {
+			// Rollback
 			todos = todos.filter((t) => t.id !== tempId);
 			optimisticOps.delete(key('add', tempId));
 			newTodoName = name;
@@ -125,9 +123,11 @@
 		const current = todos.find((t) => t.id === id);
 		if (!current) return;
 
+		// Snapshot for rollback
 		rollbackData.set(k, { ...current });
 		optimisticOps.set(k, 'toggle');
 
+		// Optimistic toggle
 		todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
 
 		try {
@@ -136,6 +136,7 @@
 			optimisticOps.delete(k);
 			rollbackData.delete(k);
 		} catch (e) {
+			// Rollback
 			const original = rollbackData.get(k);
 			if (original) todos = todos.map((t) => (t.id === id ? original : t));
 			optimisticOps.delete(k);
@@ -149,17 +150,21 @@
 		const current = todos.find((t) => t.id === id);
 		if (!current) return;
 
+		// Snapshot for potential restore and hide row immediately
 		rollbackData.set(k, current);
 		optimisticOps.set(k, 'delete');
 
+		// Show undo toast while we try the server delete
 		showUndoToast(id, current.name);
 
 		try {
 			await deleteTodo({ id });
+			// Remove permanently after success
 			todos = todos.filter((t) => t.id !== id);
 			optimisticOps.delete(k);
 			rollbackData.delete(k);
 		} catch (e) {
+			// Failed: just clear the op; row was never removed from 'todos'
 			optimisticOps.delete(k);
 			rollbackData.delete(k);
 			setError(e instanceof Error ? e.message : 'Failed to delete todo');
@@ -184,9 +189,9 @@
 		const current = todos.find((t) => t.id === id);
 		if (!current) return;
 
+		// Snapshot and optimistic rename
 		rollbackData.set(k, { ...current });
 		optimisticOps.set(k, 'update');
-
 		todos = todos.map((t) => (t.id === id ? { ...t, name } : t));
 		cancelEdit();
 
@@ -196,6 +201,7 @@
 			optimisticOps.delete(k);
 			rollbackData.delete(k);
 		} catch (e) {
+			// Rollback and re-enter edit mode with original
 			const original = rollbackData.get(k);
 			if (original) {
 				todos = todos.map((t) => (t.id === id ? original : t));
@@ -293,9 +299,7 @@
 					<!-- Each item animates with FLIP; group reveals actions on hover -->
 					<li
 						animate:flip
-						class="group list-row items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3 hover:border-base-300/70 {optimisticClass(
-							todo.id
-						)}"
+						class="group list-row items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-3 hover:border-base-300/70"
 					>
 						<!-- Checkbox -->
 						<input
@@ -359,11 +363,6 @@
 									Delete
 								</button>
 							</div>
-						{/if}
-
-						<!-- Inline spinner during toggle/update -->
-						{#if optimisticOps.has(`toggle-${todo.id}`) || optimisticOps.has(`update-${todo.id}`)}
-							<span class="loading loading-xs loading-spinner text-primary" aria-label="Loading" />
 						{/if}
 					</li>
 				{/each}
