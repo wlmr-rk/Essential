@@ -1,5 +1,331 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
+
+/* DaisyUI plugin */
 @plugin "daisyui" {
-	themes: night --default;
+	themes: light --default, dark --prefersdark, arasaka;
+}
+
+/* Custom Arasaka theme */
+@plugin "daisyui/theme" {
+	name: "arasaka";
+	primary: "#00ff9f";
+	primary-content: "#000000";
+	secondary: "#ff0040";
+	secondary-content: "#ffffff";
+	accent: "#ffff00";
+	accent-content: "#000000";
+	neutral: "#0a0a0a";
+	neutral-content: "#ffffff";
+	base-100: "#000000";
+	base-200: "#0a0a0a";
+	base-300: "#1a1a1a";
+	base-content: "#ffffff";
+	info: "#00d4ff";
+	info-content: "#000000";
+	success: "#00ff9f";
+	success-content: "#000000";
+	warning: "#ffff00";
+	warning-content: "#000000";
+	error: "#ff0040";
+	error-content: "#ffffff";
+}
+
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+	--arasaka-primary: #00ff9f;
+	--arasaka-primary-dark: #00cc7f;
+	--arasaka-secondary: #ff0040;
+	--arasaka-accent: #00d4ff;
+	--arasaka-warning: #ffaa00;
+
+	--surface-black: #000000;
+	--surface-dark: #0a0a0a;
+	--surface-darker: #050505;
+	--surface-panel: #111111;
+	--surface-elevated: #1a1a1a;
+	--surface-border: #222222;
+
+	--text-primary: #ffffff;
+	--text-secondary: #cccccc;
+	--text-muted: #888888;
+	--text-disabled: #444444;
+
+	--glow-primary: 0 0 20px rgba(0, 255, 159, 0.3);
+	--glow-primary-intense: 0 0 30px rgba(0, 255, 159, 0.6);
+	--glow-secondary: 0 0 20px rgba(255, 0, 64, 0.3);
+	--glow-accent: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+/* Base */
+body {
+	background: var(--surface-black);
+	color: var(--text-primary);
+	font-family: 'Orbitron', 'JetBrains Mono', monospace;
+	font-weight: 400;
+	line-height: 1.5;
+	overflow-x: hidden;
+}
+
+/* Panels */
+.arasaka-panel {
+	background: linear-gradient(145deg, var(--surface-panel), var(--surface-dark));
+	border: 1px solid var(--surface-border);
+	border-radius: 8px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 255, 159, 0.1);
+	backdrop-filter: blur(20px);
+	position: relative;
+	overflow: hidden;
+}
+
+.arasaka-panel::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, var(--arasaka-primary), transparent);
+	opacity: 0.3;
+}
+
+.arasaka-panel:hover {
+	border-color: rgba(0, 255, 159, 0.3);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 255, 159, 0.2), var(--glow-primary);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Buttons */
+.arasaka-btn {
+	background: linear-gradient(145deg, var(--surface-elevated), var(--surface-panel));
+	border: 1px solid var(--surface-border);
+	border-radius: 6px;
+	color: var(--text-primary);
+	font-family: 'Orbitron', monospace;
+	font-weight: 500;
+	font-size: 0.875rem;
+	padding: 0.75rem 1.5rem;
+	position: relative;
+	cursor: pointer;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.arasaka-btn::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(145deg, rgba(0, 255, 159, 0.1), transparent);
+	border-radius: 6px;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.arasaka-btn:hover {
+	border-color: var(--arasaka-primary);
+	color: var(--arasaka-primary);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 8px rgba(0, 0, 0, 0.7), var(--glow-primary);
+}
+
+.arasaka-btn:hover::before {
+	opacity: 1;
+}
+
+.arasaka-btn:active {
+	transform: translateY(0);
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.arasaka-btn.active {
+	background: linear-gradient(145deg, rgba(0, 255, 159, 0.2), rgba(0, 255, 159, 0.1));
+	border-color: var(--arasaka-primary);
+	color: var(--arasaka-primary);
+	box-shadow: inset 0 0 20px rgba(0, 255, 159, 0.2), var(--glow-primary-intense);
+}
+
+.arasaka-btn-sm {
+	padding: 0.5rem 1rem;
+	font-size: 0.75rem;
+	border-radius: 4px;
+}
+
+.arasaka-btn-icon {
+	padding: 0.5rem;
+	border-radius: 4px;
+	min-width: auto;
+}
+
+.arasaka-btn-danger {
+	border-color: rgba(255, 0, 64, 0.3);
+	color: var(--arasaka-secondary);
+}
+
+.arasaka-btn-danger:hover {
+	border-color: var(--arasaka-secondary);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 8px rgba(0, 0, 0, 0.7), var(--glow-secondary);
+}
+
+/* Inputs */
+.arasaka-input {
+	background: var(--surface-darker);
+	border: 1px solid var(--surface-border);
+	border-radius: 4px;
+	color: var(--text-primary);
+	font-family: 'Orbitron', monospace;
+	font-size: 0.875rem;
+	padding: 0.75rem 1rem;
+	width: 100%;
+	transition: all 0.2s ease;
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.arasaka-input:focus {
+	outline: none;
+	border-color: var(--arasaka-primary);
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(0, 255, 159, 0.2), var(--glow-primary);
+}
+
+.arasaka-input::placeholder {
+	color: var(--text-disabled);
+}
+
+/* Progress */
+.arasaka-progress {
+	background: var(--surface-darker);
+	border-radius: 2px;
+	height: 4px;
+	overflow: hidden;
+	position: relative;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.arasaka-progress-bar {
+	background: linear-gradient(90deg, var(--arasaka-primary), var(--arasaka-accent));
+	height: 100%;
+	border-radius: 2px;
+	transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 0 8px rgba(0, 255, 159, 0.5);
+	position: relative;
+}
+
+.arasaka-progress-bar::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+
+}
+
+
+
+/* Typography */
+.arasaka-title {
+	font-family: 'Orbitron', monospace;
+	font-weight: 700;
+	color: var(--arasaka-primary);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	text-shadow: 0 0 10px rgba(0, 255, 159, 0.5);
+}
+
+.arasaka-subtitle {
+	font-family: 'Orbitron', monospace;
+	font-weight: 500;
+	color: var(--text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-size: 0.875rem;
+}
+
+.arasaka-label {
+	font-family: 'Orbitron', monospace;
+	font-weight: 400;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-size: 0.75rem;
+}
+
+.arasaka-value {
+	font-family: 'Orbitron', monospace;
+	font-weight: 600;
+	color: var(--arasaka-primary);
+	font-size: 0.875rem;
+}
+
+/* Status Indicators */
+.status-optimal {
+	color: var(--arasaka-primary);
+}
+
+.status-warning {
+	color: var(--arasaka-warning);
+}
+
+.status-critical {
+	color: var(--arasaka-secondary);
+}
+
+.status-info {
+	color: var(--arasaka-accent);
+}
+
+/* Loading */
+.arasaka-loading {
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--surface-border);
+	border-top: 2px solid var(--arasaka-primary);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	box-shadow: 0 0 10px rgba(0, 255, 159, 0.3);
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* Utility Text Colors */
+.cyber-text-primary {
+	color: var(--arasaka-primary);
+}
+
+.cyber-text-secondary {
+	color: var(--arasaka-secondary);
+}
+
+.cyber-text-accent {
+	color: var(--arasaka-accent);
+}
+
+.cyber-text-warning {
+	color: var(--arasaka-warning);
+}
+
+/* Responsive */
+@media (max-width:768px) {
+	.arasaka-panel {
+		margin: 0.5rem;
+	}
+
+	.arasaka-btn {
+		padding: 0.625rem 1.25rem;
+		font-size: 0.8125rem;
+	}
 }

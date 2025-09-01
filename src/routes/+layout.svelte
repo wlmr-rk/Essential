@@ -1,41 +1,49 @@
 <script lang="ts">
 	import '../app.css';
+	import { user, loading } from '$lib/stores/auth';
+	import Login from '$lib/components/Login.svelte';
+
 	let { children } = $props();
 </script>
 
 <svelte:head />
 
-<!-- Layout shell with a simple navbar -->
-<div class="min-h-screen bg-base-200 text-base-content">
-	<main class="container mx-auto max-w-2xl p-6">
-		<svelte:boundary>
-			{@render children?.()}
+{#if $loading}
+	<!-- Loading state -->
+	<div class="min-h-screen bg-black flex items-center justify-center">
+		<div class="animate-spin h-8 w-8 border border-primary border-t-transparent rounded-full"></div>
+	</div>
+{:else if !$user}
+	<!-- Not authenticated - show login -->
+	<Login />
+{:else}
+	<!-- Authenticated - show app -->
+	<div class="min-h-screen bg-black text-white">
+		<main class="container mx-auto max-w-6xl p-6">
+			<svelte:boundary>
+				{@render children?.()}
 
-			{#snippet pending()}
-				<!-- Pending state: centered spinner + optional skeleton -->
-				<section class="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-					<div class="w-full space-y-3 rounded-box bg-base-100 p-4">
-						<div class="h-8 w-1/3 skeleton"></div>
-						<div class="h-12 w-full skeleton"></div>
-						<div class="h-12 w-full skeleton"></div>
-						<div class="h-12 w-2/3 skeleton"></div>
-					</div>
-				</section>
-			{/snippet}
+				{#snippet pending()}
+					<!-- Pending state: minimal loading -->
+					<section class="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+						<div class="animate-spin h-8 w-8 border border-primary border-t-transparent rounded-full"></div>
+					</section>
+				{/snippet}
 
-			{#snippet failed(err)}
-				<!-- Failed state: alert-error with retry -->
-				<section class="min-h-[40vh]">
-					<div class="alert alert-error">
-						<span>
-							<span class="font-semibold">Something went wrong.</span>
-							{#if err?.message}
-								<span class="ml-1 opacity-80">{err.message}</span>
-							{/if}
-						</span>
-					</div>
-				</section>
-			{/snippet}
-		</svelte:boundary>
-	</main>
-</div>
+				{#snippet failed(err)}
+					<!-- Failed state: minimal error -->
+					<section class="min-h-[40vh] flex items-center justify-center">
+						<div class="cyber-card p-6 rounded">
+							<p class="cyber-text-secondary">
+								System Error
+								{#if err && typeof err === 'object' && 'message' in err}
+									: {String(err.message)}
+								{/if}
+							</p>
+						</div>
+					</section>
+				{/snippet}
+			</svelte:boundary>
+		</main>
+	</div>
+{/if}
