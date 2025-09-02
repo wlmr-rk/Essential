@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The QSelf Dashboard is a personal quantified-self tracking application built with SvelteKit 5 that allows users to track and score their daily wellness activities. The system tracks sleep patterns, habit completion, mood levels, and workout presence, then calculates a weighted daily score to provide insights into overall wellness performance. The application uses modern web technologies including SvelteKit Remote Functions, optimistic UI patterns, Supabase for backend services, and Temporal API for timezone-aware time management.
+The QSelf Dashboard is a premium personal quantified-self tracking application built with SvelteKit 5 that provides an exceptional user experience for tracking and scoring daily wellness activities. The system features a completely overhauled UI/UX with a sophisticated design system, tracks sleep patterns, habit completion, mood levels, and workout presence, then calculates a weighted daily score with comprehensive historical visualization. The application uses modern web technologies including SvelteKit Remote Functions, optimistic UI patterns, Supabase for backend services, and Temporal API for timezone-aware time management, all wrapped in a premium, accessible, and highly polished interface.
 
 ## Requirements
 
@@ -109,3 +109,50 @@ The QSelf Dashboard is a personal quantified-self tracking application built wit
 4. WHEN handling sleep data that crosses midnight THEN the system SHALL correctly associate the sleep session with the appropriate local date
 5. WHEN comparing dates THEN the system SHALL use timezone-aware date calculations
 6. WHEN the user enters time data THEN the system SHALL interpret it as local time in Asia/Manila timezone
+
+### Requirement 9: Premium Design System and UI/UX Overhaul
+
+**User Story:** As a user, I want a visually stunning and highly polished interface that feels premium and professional, so that I enjoy using the application and feel confident in its quality.
+
+#### Acceptance Criteria
+
+1. WHEN viewing any interface element THEN the system SHALL display consistent, premium visual design with sophisticated typography, spacing, and color schemes
+2. WHEN interacting with components THEN the system SHALL provide subtle, refined animations and transitions that enhance usability without being distracting
+3. WHEN using the application on different devices THEN the system SHALL maintain visual consistency and optimal layouts across all screen sizes
+4. WHEN hovering over interactive elements THEN the system SHALL provide appropriate feedback without overwhelming glow effects or excessive visual noise
+5. WHEN viewing data visualizations THEN the system SHALL use clean, modern chart designs with appropriate color coding and clear labeling
+6. WHEN navigating the interface THEN the system SHALL provide clear visual hierarchy and intuitive information architecture
+7. WHEN accessing any feature THEN the system SHALL maintain consistent interaction patterns and visual language throughout the application
+8. WHEN viewing loading states THEN the system SHALL display elegant skeleton loaders and progress indicators
+9. WHEN encountering errors THEN the system SHALL show graceful error states with helpful messaging and recovery options
+10. WHEN using form inputs THEN the system SHALL provide clear validation feedback and intuitive input experiences
+
+### Requirement 10: Enhanced Historical Data Visualization
+
+**User Story:** As a user, I want to see comprehensive historical data visualization including accurate heatmaps and trends, so that I can understand my long-term wellness patterns and progress.
+
+#### Acceptance Criteria
+
+1. WHEN viewing the heatmap THEN the system SHALL accurately display historical daily scores including data from previous days
+2. WHEN calculating historical scores THEN the system SHALL properly aggregate component scores from all tracking categories for each day
+3. WHEN displaying historical data THEN the system SHALL ensure the remote functions correctly retrieve and process past data entries
+4. WHEN viewing trends THEN the system SHALL provide meaningful insights and patterns from historical tracking data
+5. WHEN historical data is missing THEN the system SHALL clearly indicate gaps in the visualization without showing false empty states
+6. WHEN updating current day data THEN the system SHALL immediately reflect changes in both current displays and historical visualizations
+7. WHEN viewing different time periods THEN the system SHALL allow users to explore various date ranges with smooth navigation
+8. WHEN displaying component breakdowns THEN the system SHALL show historical trends for individual tracking categories
+
+### Requirement 11: Refined Interaction Design
+
+**User Story:** As a user, I want all interactions to feel smooth, intentional, and satisfying, so that using the application is a pleasant and efficient experience.
+
+#### Acceptance Criteria
+
+1. WHEN clicking buttons THEN the system SHALL provide immediate tactile feedback without excessive visual effects
+2. WHEN hovering over cards or panels THEN the system SHALL provide subtle visual feedback that enhances usability without being distracting
+3. WHEN completing actions THEN the system SHALL provide appropriate success feedback through micro-interactions
+4. WHEN navigating between sections THEN the system SHALL use smooth, purposeful transitions that guide user attention
+5. WHEN inputting data THEN the system SHALL provide real-time validation and formatting assistance
+6. WHEN viewing different states THEN the system SHALL use consistent visual language for similar interaction patterns
+7. WHEN using touch interfaces THEN the system SHALL provide appropriate touch targets and gesture support
+8. WHEN keyboard navigating THEN the system SHALL provide clear focus indicators and logical tab order

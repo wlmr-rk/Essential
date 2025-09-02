@@ -89,7 +89,7 @@
 	subtitle="Daily Goals"
 	icon={Target}
 	value={habitsData.current?.score}
-	status={habitsData.current?.score ? (habitsData.current.score >= 80 ? 'optimal' : habitsData.current.score >= 50 ? 'warning' : 'critical') : undefined}
+	status={habitsData.current?.score ? (habitsData.current.score >= 80 ? 'success' : habitsData.current.score >= 50 ? 'warning' : 'error') : undefined}
 	loading={habitsData.loading}
 >
 		
@@ -100,31 +100,31 @@
 		</div>
 	{:else if habitsData.current && habitsData.current.habits.length > 0}
 		<!-- Display habits list -->
-		<div class="space-y-2">
+		<div class="space-y-3">
 			{#each habitsData.current.habits as habit (habit.id)}
-				<div class="flex items-center justify-between p-2 rounded-lg bg-gray-900/30">
-					<div class="flex items-center gap-3">
+				<div class="flex items-center justify-between p-4 rounded-lg bg-gray-900/20 border border-gray-800/50">
+					<div class="flex items-center gap-4">
 						<button
-							class="arasaka-btn arasaka-btn-sm {habit.completed ? 'active' : ''}"
+							class="arasaka-btn arasaka-btn-sm p-2 {habit.completed ? 'active' : ''}"
 							onclick={() => handleToggleHabit(habit.id, habit.completed)}
 							disabled={isSubmitting}
 						>
 							{#if habit.completed}
-								<CheckSquare size={14} class="cyber-text-primary" />
+								<CheckSquare size={16} class="cyber-text-primary" />
 							{:else}
-								<Square size={14} class="text-gray-400" />
+								<Square size={16} class="text-gray-400" />
 							{/if}
 						</button>
 						
 						<div>
-							<span class="arasaka-label {habit.completed ? 'line-through text-gray-500' : ''}">{habit.name}</span>
+							<span class="arasaka-label text-sm {habit.completed ? 'line-through text-gray-500' : ''}">{habit.name}</span>
 							{#if habit.weight > 1}
-								<span class="text-xs text-gray-500 ml-1">({habit.weight}x)</span>
+								<span class="text-xs text-gray-500 ml-2">({habit.weight}x)</span>
 							{/if}
 						</div>
 					</div>
 					
-					<div class="arasaka-value text-sm cyber-text-primary">
+					<div class="arasaka-value cyber-text-primary">
 						{habit.completed ? habit.weight : 0}/{habit.weight}
 					</div>
 				</div>

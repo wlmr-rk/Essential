@@ -91,7 +91,7 @@
 	subtitle="How you feel"
 	icon={Heart}
 	value={moodData.current?.score}
-	status={moodData.current?.score ? (moodData.current.score >= 75 ? 'optimal' : moodData.current.score >= 50 ? 'warning' : 'critical') : undefined}
+	status={moodData.current?.score ? (moodData.current.score >= 75 ? 'success' : moodData.current.score >= 50 ? 'warning' : 'error') : undefined}
 	loading={moodData.loading}
 >
 		
@@ -102,34 +102,34 @@
 		</div>
 	{:else}
 		<!-- Rating interface -->
-		<div class="space-y-4">
+		<div class="space-y-5">
 			<!-- Rating scale buttons -->
 			<div class="flex justify-center gap-2">
 				{#each [1, 2, 3, 4, 5] as rating}
 					{@const IconComponent = getMoodIcon(rating)}
 					<button
-						class="arasaka-btn arasaka-btn-sm {moodData.current?.rating === rating ? 'active' : ''}"
+						class="arasaka-btn arasaka-btn-sm p-3 {moodData.current?.rating === rating ? 'active' : ''}"
 						onclick={() => handleRatingSelect(rating)}
 						disabled={isSubmitting}
 						title={getMoodLabel(rating)}
 					>
-						<IconComponent size={16} class={getRatingColorClass(rating)} />
+						<IconComponent size={18} class={getRatingColorClass(rating)} />
 					</button>
 				{/each}
 			</div>
 			
 			{#if moodData.current && moodData.current.hasData}
 				<!-- Current mood display -->
-				<div class="text-center p-3 rounded-lg bg-gray-900/30">
+				<div class="text-center p-4 rounded-lg bg-gray-900/20">
 					<div class="arasaka-label">Current State</div>
-					<div class="arasaka-value mt-1 {getRatingColorClass(moodData.current.rating || 3)}">
+					<div class="arasaka-value mt-2 text-lg {getRatingColorClass(moodData.current.rating || 3)}">
 						{getMoodLabel(moodData.current.rating || 3)}
 					</div>
 				</div>
 			{:else}
 				<!-- Empty state -->
-				<div class="text-center py-4">
-					<Heart size={24} class="mx-auto mb-2 text-gray-600" />
+				<div class="text-center py-6">
+					<Heart size={28} class="mx-auto mb-3 text-gray-600" />
 					<p class="arasaka-label">Rate your mood</p>
 				</div>
 			{/if}

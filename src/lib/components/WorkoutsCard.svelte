@@ -89,7 +89,7 @@
 	subtitle="Exercise"
 	icon={Activity}
 	value={workoutsData.current?.score}
-	status={workoutsData.current?.score ? (workoutsData.current.score >= 80 ? 'optimal' : 'critical') : undefined}
+	status={workoutsData.current?.score ? (workoutsData.current.score >= 80 ? 'success' : 'error') : undefined}
 	loading={workoutsData.loading}
 >
 		
@@ -100,22 +100,22 @@
 		</div>
 	{:else}
 		<!-- Workout toggle buttons -->
-		<div class="space-y-3">
+		<div class="space-y-4">
 			{#each [
 				{ type: 'running' as const, icon: getWorkoutIcon('running'), label: getWorkoutLabel('running'), completed: workoutsData.current?.runningCompleted },
 				{ type: 'calisthenics' as const, icon: getWorkoutIcon('calisthenics'), label: getWorkoutLabel('calisthenics'), completed: workoutsData.current?.calisthenicsCompleted }
 			] as workout}
 				{@const IconComponent = workout.icon}
 				<button
-					class="arasaka-btn w-full flex items-center justify-between p-3 {workout.completed ? 'active' : ''}"
+					class="arasaka-btn w-full flex items-center justify-between p-4 {workout.completed ? 'active' : ''}"
 					onclick={() => handleToggleWorkout(workout.type, workout.completed || false)}
 					disabled={isSubmitting}
 				>
-					<div class="flex items-center gap-2">
-						<IconComponent size={16} class="text-gray-400" />
-						<span class="arasaka-label">{workout.label}</span>
+					<div class="flex items-center gap-3">
+						<IconComponent size={18} class="text-gray-400" />
+						<span class="arasaka-label text-sm">{workout.label}</span>
 					</div>
-					<div class="text-lg">
+					<div class="text-xl">
 						{#if workout.completed}
 							✓
 						{:else}

@@ -158,7 +158,7 @@
 	subtitle="Rest & Recovery"
 	icon={Moon}
 	value={sleepData.current?.score}
-	status={sleepData.current?.score ? (sleepData.current.score >= 80 ? 'optimal' : sleepData.current.score >= 60 ? 'warning' : 'critical') : undefined}
+	status={sleepData.current?.score ? (sleepData.current.score >= 80 ? 'success' : sleepData.current.score >= 60 ? 'warning' : 'error') : undefined}
 	loading={sleepData.loading}
 >
 	{#if !isEditing && !sleepData.loading}
@@ -174,13 +174,13 @@
 	{/if}
 		
 	{#if sleepData.error}
-		<div class="text-center py-4">
-			<div class="cyber-text-secondary arasaka-subtitle">Error</div>
-			<p class="arasaka-label mt-2">Unable to load sleep data</p>
+		<div class="text-center py-6">
+			<div class="text-error text-subtitle">Error</div>
+			<p class="text-caption mt-2">Unable to load sleep data</p>
 		</div>
 	{:else if isEditing}
 		<!-- Edit mode -->
-		<form onsubmit={handleSave} class="space-y-4">
+		<form onsubmit={handleSave} class="space-y-5">
 			<div class="grid grid-cols-2 gap-4">
 				<Input
 					type="time"
@@ -202,21 +202,21 @@
 			</div>
 			
 			{#if sleepStartLocal && wakeTimeLocal}
-				<div class="p-3 rounded-lg bg-gray-900/50 border border-gray-800">
+				<div class="p-4 rounded-lg bg-zinc-800 border border-zinc-700">
 					<div class="flex justify-between items-center">
-						<span class="arasaka-label">Duration</span>
-						<span class="arasaka-value">{formatDuration(calculateOptimisticDuration())}</span>
+						<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Duration</span>
+						<span class="text-lg font-semibold text-white">{formatDuration(calculateOptimisticDuration())}</span>
 					</div>
 					<div class="flex justify-between items-center mt-2">
-						<span class="arasaka-label">Projected Score</span>
-						<span class="arasaka-value">{calculateOptimisticScore()}/100</span>
+						<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Projected Score</span>
+						<span class="text-lg font-semibold text-white">{calculateOptimisticScore()}/100</span>
 					</div>
 				</div>
 			{/if}
 			
 			{#if errorMessage}
-				<div class="p-3 rounded-lg border border-red-500/30 bg-red-500/10">
-					<p class="cyber-text-secondary text-sm">{errorMessage}</p>
+				<div class="p-4 rounded-lg bg-red-900/20 border border-red-500">
+					<p class="text-red-400 text-sm">{errorMessage}</p>
 				</div>
 			{/if}
 			
@@ -228,7 +228,7 @@
 					loading={isSubmitting}
 					onclick={() => {}}
 				>
-					Save Data
+					Save
 				</Button>
 				<Button
 					variant="ghost"
@@ -243,35 +243,29 @@
 		</form>
 	{:else if sleepData.current}
 		<!-- Display mode with data -->
-		<div class="space-y-4">
+		<div class="space-y-6">
 			<div class="grid grid-cols-2 gap-4">
-				<div class="text-center p-3 rounded-lg bg-gray-900/30">
-					<div class="arasaka-label">Sleep Start</div>
-					<div class="arasaka-value mt-1">{sleepData.current.sleepStartLocal}</div>
+				<div class="text-center p-4 rounded-lg bg-zinc-800">
+					<div class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Sleep Start</div>
+					<div class="text-lg font-semibold text-white mt-2">{sleepData.current.sleepStartLocal}</div>
 				</div>
-				<div class="text-center p-3 rounded-lg bg-gray-900/30">
-					<div class="arasaka-label">Wake Time</div>
-					<div class="arasaka-value mt-1">{sleepData.current.wakeTimeLocal}</div>
+				<div class="text-center p-4 rounded-lg bg-zinc-800">
+					<div class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Wake Time</div>
+					<div class="text-lg font-semibold text-white mt-2">{sleepData.current.wakeTimeLocal}</div>
 				</div>
 			</div>
 			
-			<div class="text-center p-4 rounded-lg bg-gray-900/50 border border-gray-800">
-				<div class="arasaka-label">Total Duration</div>
-				<div class="arasaka-value text-xl mt-2">{formatDuration(sleepData.current.durationMins)}</div>
+			<div class="text-center p-6 rounded-lg bg-zinc-800 border border-zinc-700">
+				<div class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Total Duration</div>
+				<div class="text-2xl font-bold text-white mt-3">{formatDuration(sleepData.current.durationMins)}</div>
 			</div>
-			
-			<ProgressBar
-				value={sleepData.current.score}
-				label="Sleep Quality Score"
-				status={sleepData.current.score >= 80 ? 'optimal' : sleepData.current.score >= 60 ? 'warning' : 'critical'}
-			/>
 		</div>
 	{:else}
 		<!-- Empty state -->
 		<div class="text-center py-8">
-			<Moon size={32} class="mx-auto mb-4 text-gray-600" />
-			<div class="arasaka-subtitle text-gray-500">No Sleep Data</div>
-			<p class="arasaka-label mt-2 mb-4">Track your sleep to see patterns</p>
+			<Moon size={32} class="mx-auto mb-4 text-zinc-500" />
+			<div class="text-lg font-medium text-zinc-500">No Sleep Data</div>
+			<p class="text-xs text-zinc-600 mt-2 mb-4">Track your sleep to see patterns</p>
 			<Button
 				variant="primary"
 				size="sm"

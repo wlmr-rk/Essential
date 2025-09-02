@@ -2,9 +2,9 @@
 
 ## Overview
 
-The QSelf Dashboard is a modern web application built with SvelteKit 5 that implements a comprehensive quantified-self tracking system. The application leverages cutting-edge web technologies including SvelteKit Remote Functions for server-client communication, optimistic UI patterns for responsive user experience, and Supabase for backend services. The system is designed to track daily wellness activities (sleep, habits, mood, workouts) and provide intelligent scoring and insights.
+The QSelf Dashboard is a premium, highly polished web application built with SvelteKit 5 that implements a comprehensive quantified-self tracking system with exceptional user experience. The application features a completely overhauled design system with sophisticated visual hierarchy, refined interactions, and comprehensive historical data visualization. It leverages cutting-edge web technologies including SvelteKit Remote Functions for server-client communication, optimistic UI patterns for responsive user experience, and Supabase for backend services.
 
-The architecture follows a component-based design with reactive state management, timezone-aware data handling, and real-time UI updates. The application prioritizes user experience through optimistic updates, skeleton loading states, and seamless error handling.
+The architecture follows a component-based design with reactive state management, timezone-aware data handling, real-time UI updates, and a premium design system that prioritizes accessibility, visual consistency, and user delight. The application implements a magnum opus approach to UI/UX with carefully crafted micro-interactions, sophisticated typography, and a cohesive visual language throughout.
 
 ## Architecture
 
@@ -55,6 +55,126 @@ export default {
 };
 ```
 
+## Premium Design System
+
+### Visual Design Philosophy
+
+The application implements a sophisticated design system based on the following principles:
+
+#### Color System
+- **Primary Palette**: Deep charcoal (#1a1a1a) with subtle warm undertones
+- **Accent Colors**: Carefully selected blues and greens for data visualization
+- **Semantic Colors**: Consistent success, warning, and error states
+- **Neutral Grays**: 8-step gray scale for text hierarchy and backgrounds
+- **Interactive States**: Subtle color shifts for hover, active, and focus states
+
+#### Typography System
+```css
+/* Primary Font Stack */
+font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+/* Type Scale */
+--text-xs: 0.75rem;    /* 12px */
+--text-sm: 0.875rem;   /* 14px */
+--text-base: 1rem;     /* 16px */
+--text-lg: 1.125rem;   /* 18px */
+--text-xl: 1.25rem;    /* 20px */
+--text-2xl: 1.5rem;    /* 24px */
+--text-3xl: 1.875rem;  /* 30px */
+
+/* Font Weights */
+--font-light: 300;
+--font-normal: 400;
+--font-medium: 500;
+--font-semibold: 600;
+--font-bold: 700;
+```
+
+#### Spacing System
+```css
+/* 8px base unit spacing system */
+--space-1: 0.25rem;   /* 4px */
+--space-2: 0.5rem;    /* 8px */
+--space-3: 0.75rem;   /* 12px */
+--space-4: 1rem;      /* 16px */
+--space-6: 1.5rem;    /* 24px */
+--space-8: 2rem;      /* 32px */
+--space-12: 3rem;     /* 48px */
+--space-16: 4rem;     /* 64px */
+```
+
+#### Border Radius System
+```css
+--radius-sm: 0.25rem;   /* 4px */
+--radius-md: 0.375rem;  /* 6px */
+--radius-lg: 0.5rem;    /* 8px */
+--radius-xl: 0.75rem;   /* 12px */
+--radius-2xl: 1rem;     /* 16px */
+```
+
+### Component Design Patterns
+
+#### Card Components
+- **Elevated Surface**: Subtle shadows with layered depth
+- **Refined Borders**: 1px borders with carefully selected opacity
+- **Consistent Padding**: 24px internal spacing for optimal content breathing room
+- **Hover States**: Subtle elevation changes without distracting glow effects
+- **Focus States**: Clear accessibility indicators with proper contrast ratios
+
+#### Interactive Elements
+- **Buttons**: Multiple variants (primary, secondary, ghost) with consistent sizing
+- **Form Inputs**: Clean, minimal design with clear validation states
+- **Toggle Controls**: Smooth animations with satisfying tactile feedback
+- **Navigation**: Clear hierarchy with intuitive interaction patterns
+
+#### Data Visualization
+- **Heatmap**: Clean grid layout with meaningful color encoding
+- **Progress Indicators**: Smooth animations with clear completion states
+- **Score Displays**: Prominent typography with supporting context
+- **Charts**: Minimal, data-focused design with appropriate color coding
+
+### Animation and Micro-interactions
+
+#### Transition System
+```css
+/* Easing Functions */
+--ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+--ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+--ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+/* Duration Scale */
+--duration-fast: 150ms;
+--duration-normal: 250ms;
+--duration-slow: 350ms;
+```
+
+#### Interaction Feedback
+- **Button Press**: Subtle scale transform (0.98) with quick spring back
+- **Card Hover**: Gentle elevation increase without glow effects
+- **Form Focus**: Smooth border color transition with ring indicator
+- **Loading States**: Elegant skeleton animations with proper timing
+- **Success Actions**: Satisfying completion animations with appropriate duration
+
+### Accessibility Design
+
+#### Color Contrast
+- **Text on Background**: Minimum 4.5:1 contrast ratio
+- **Interactive Elements**: Minimum 3:1 contrast ratio
+- **Focus Indicators**: High contrast with 2px minimum thickness
+- **Color Blind Friendly**: Patterns and shapes supplement color coding
+
+#### Keyboard Navigation
+- **Tab Order**: Logical flow through interactive elements
+- **Focus Management**: Clear visual indicators for all focusable elements
+- **Keyboard Shortcuts**: Intuitive shortcuts for common actions
+- **Screen Reader Support**: Proper ARIA labels and semantic HTML
+
+#### Responsive Design
+- **Mobile First**: Optimized touch targets (44px minimum)
+- **Flexible Layouts**: Fluid grids that adapt to content
+- **Readable Typography**: Appropriate font sizes across devices
+- **Touch Gestures**: Intuitive swipe and tap interactions
+
 ## Components and Interfaces
 
 ### Remote Functions Layer
@@ -67,6 +187,8 @@ The application uses SvelteKit Remote Functions to handle server-client communic
 - `getTodayMood(localDate)` - Retrieves mood rating
 - `getTodayWorkouts(localDate)` - Retrieves workout completion status
 - `getDayScore(localDate)` - Calculates and retrieves daily wellness score
+- `getHistoricalScores(startDate, endDate)` - Retrieves historical daily scores for heatmap visualization
+- `getScoreTrends(days)` - Retrieves component score trends over specified period
 
 #### Command Functions
 - `upsertSleep(data)` - Creates or updates sleep records
@@ -107,12 +229,130 @@ async function handleSave(newData) {
   - `DayScoreCard.svelte`
 
 #### Card Component Pattern
-Each card follows a consistent pattern:
-- Independent data fetching using Remote Functions
-- Optimistic UI updates with automatic rollback
-- Edit/display mode switching
-- Error handling with user feedback
-- Loading states with skeleton components
+Each card follows a consistent premium design pattern:
+- **Independent Data Fetching**: Using Remote Functions with proper error boundaries
+- **Optimistic UI Updates**: Immediate feedback with automatic rollback on failure
+- **Refined Visual States**: Edit/display mode switching with smooth transitions
+- **Sophisticated Error Handling**: Graceful error states with recovery options
+- **Premium Loading States**: Elegant skeleton components with proper timing
+- **Consistent Interaction Design**: Hover states without excessive glow effects
+- **Accessibility Compliance**: Proper ARIA labels and keyboard navigation
+- **Responsive Layout**: Optimal display across all device sizes
+
+#### Enhanced UI Components
+
+##### Premium Button Component
+```svelte
+<!-- Button.svelte -->
+<script lang="ts">
+  interface Props {
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+    size?: 'sm' | 'md' | 'lg';
+    disabled?: boolean;
+    loading?: boolean;
+    children: Snippet;
+  }
+  
+  let { variant = 'primary', size = 'md', disabled = false, loading = false, children }: Props = $props();
+</script>
+
+<button 
+  class="btn btn-{variant} btn-{size}"
+  class:loading
+  {disabled}
+  onclick
+>
+  {@render children()}
+</button>
+
+<style>
+  .btn {
+    @apply inline-flex items-center justify-center font-medium transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    transform: translateY(0);
+  }
+  
+  .btn:active:not(:disabled) {
+    transform: translateY(1px) scale(0.98);
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500;
+  }
+  
+  .btn-sm { @apply px-3 py-1.5 text-sm; }
+  .btn-md { @apply px-4 py-2 text-base; }
+  .btn-lg { @apply px-6 py-3 text-lg; }
+</style>
+```
+
+##### Enhanced Panel Component
+```svelte
+<!-- Panel.svelte -->
+<script lang="ts">
+  interface Props {
+    variant?: 'default' | 'elevated' | 'bordered';
+    padding?: 'sm' | 'md' | 'lg';
+    interactive?: boolean;
+    children: Snippet;
+  }
+  
+  let { variant = 'default', padding = 'md', interactive = false, children }: Props = $props();
+</script>
+
+<div 
+  class="panel panel-{variant} panel-{padding}"
+  class:interactive
+  role={interactive ? 'button' : undefined}
+  tabindex={interactive ? 0 : undefined}
+>
+  {@render children()}
+</div>
+
+<style>
+  .panel {
+    @apply rounded-xl transition-all duration-250;
+  }
+  
+  .panel-default {
+    @apply bg-white border border-gray-200;
+  }
+  
+  .panel-elevated {
+    @apply bg-white shadow-sm border border-gray-100;
+  }
+  
+  .panel-bordered {
+    @apply bg-white border-2 border-gray-200;
+  }
+  
+  .interactive {
+    @apply cursor-pointer;
+  }
+  
+  .interactive:hover {
+    @apply shadow-md border-gray-300;
+    transform: translateY(-1px);
+  }
+  
+  .interactive:focus {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  }
+  
+  .panel-sm { @apply p-4; }
+  .panel-md { @apply p-6; }
+  .panel-lg { @apply p-8; }
+</style>
+```
 
 ### Authentication System
 
@@ -426,4 +666,297 @@ function calculateDayScore(components: ScoreComponents): DayScore {
 - Connection pooling via Supabase
 - Optimized query patterns with Drizzle ORM
 
-This design provides a solid foundation for implementing the QSelf Dashboard with modern web technologies, ensuring scalability, maintainability, and excellent user experience.
+## Enhanced Historical Data Visualization
+
+### Heatmap Component Design
+
+#### Data Architecture for Historical Scores
+```typescript
+interface HistoricalScore {
+  localDate: string;
+  totalScore: number;
+  breakdown: {
+    sleep: number;
+    habits: number;
+    mood: number;
+    workouts: number;
+  };
+  hasData: boolean;
+}
+
+interface HeatmapData {
+  scores: HistoricalScore[];
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  maxScore: number;
+}
+```
+
+#### Enhanced Remote Function for Historical Data
+```typescript
+// src/routes/historical-scores.remote.ts
+import { requireUser } from '$lib/server/auth';
+import { db } from '$lib/server/db';
+import { calculateDayScore } from '$lib/scoring';
+
+export async function getHistoricalScores(
+  startDate: string, 
+  endDate: string
+): Promise<HeatmapData> {
+  const user = await requireUser();
+  
+  // Fetch all component data for date range
+  const [sleepData, habitsData, moodData, workoutData] = await Promise.all([
+    db.query.sleepLogs.findMany({
+      where: and(
+        eq(sleepLogs.userId, user.id),
+        gte(sleepLogs.localDate, startDate),
+        lte(sleepLogs.localDate, endDate)
+      )
+    }),
+    // Similar queries for habits, mood, workouts...
+  ]);
+  
+  // Generate complete date range and calculate scores
+  const scores: HistoricalScore[] = [];
+  const currentDate = Temporal.PlainDate.from(startDate);
+  const endDateObj = Temporal.PlainDate.from(endDate);
+  
+  while (Temporal.PlainDate.compare(currentDate, endDateObj) <= 0) {
+    const dateStr = currentDate.toString();
+    
+    // Find data for this date
+    const dayData = {
+      sleep: sleepData.find(s => s.localDate === dateStr),
+      habits: habitsData.filter(h => h.localDate === dateStr),
+      mood: moodData.find(m => m.localDate === dateStr),
+      workouts: workoutData.find(w => w.localDate === dateStr)
+    };
+    
+    // Calculate score if any data exists
+    const hasData = !!(dayData.sleep || dayData.habits.length || dayData.mood || dayData.workouts);
+    const score = hasData ? calculateDayScore(dayData) : null;
+    
+    scores.push({
+      localDate: dateStr,
+      totalScore: score?.total || 0,
+      breakdown: score?.breakdown || { sleep: 0, habits: 0, mood: 0, workouts: 0 },
+      hasData
+    });
+    
+    currentDate = currentDate.add({ days: 1 });
+  }
+  
+  return {
+    scores,
+    dateRange: { start: startDate, end: endDate },
+    maxScore: Math.max(...scores.map(s => s.totalScore))
+  };
+}
+```
+
+#### Premium Heatmap Component
+```svelte
+<!-- Heatmap.svelte -->
+<script lang="ts">
+  import { getHistoricalScores } from '../routes/historical-scores.remote';
+  import { getTodayLocalDate } from '$lib/time/temporal';
+  
+  interface Props {
+    days?: number;
+  }
+  
+  let { days = 60 }: Props = $props();
+  
+  const today = getTodayLocalDate();
+  const startDate = Temporal.PlainDate.from(today).subtract({ days: days - 1 }).toString();
+  
+  const historicalData = getHistoricalScores(startDate, today);
+</script>
+
+{#await historicalData}
+  <div class="heatmap-skeleton">
+    <div class="grid grid-cols-10 gap-1">
+      {#each Array(60) as _}
+        <div class="w-3 h-3 bg-gray-200 rounded-sm animate-pulse"></div>
+      {/each}
+    </div>
+  </div>
+{:then data}
+  <div class="heatmap-container">
+    <div class="heatmap-grid">
+      {#each data.scores as score}
+        <div 
+          class="heatmap-cell"
+          class:has-data={score.hasData}
+          class:no-data={!score.hasData}
+          style="--intensity: {score.hasData ? score.totalScore / 100 : 0}"
+          title="{score.localDate}: {score.hasData ? `${score.totalScore}%` : 'No data'}"
+        >
+        </div>
+      {/each}
+    </div>
+    
+    <div class="heatmap-legend">
+      <span class="text-xs text-gray-500">Less</span>
+      <div class="legend-scale">
+        {#each [0, 0.25, 0.5, 0.75, 1] as intensity}
+          <div 
+            class="legend-cell"
+            style="--intensity: {intensity}"
+          ></div>
+        {/each}
+      </div>
+      <span class="text-xs text-gray-500">More</span>
+    </div>
+  </div>
+{:catch error}
+  <div class="heatmap-error">
+    <p class="text-sm text-red-600">Failed to load historical data</p>
+    <button class="text-xs text-blue-600 hover:underline" onclick={() => location.reload()}>
+      Retry
+    </button>
+  </div>
+{/await}
+
+<style>
+  .heatmap-container {
+    @apply space-y-3;
+  }
+  
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+  }
+  
+  .heatmap-cell {
+    @apply w-3 h-3 rounded-sm transition-all duration-150;
+    background-color: hsl(142, calc(var(--intensity) * 70%), calc(85% - var(--intensity) * 35%));
+  }
+  
+  .heatmap-cell.no-data {
+    @apply bg-gray-100 border border-gray-200;
+  }
+  
+  .heatmap-cell:hover {
+    @apply scale-110 ring-1 ring-gray-400;
+  }
+  
+  .heatmap-legend {
+    @apply flex items-center justify-center space-x-2;
+  }
+  
+  .legend-scale {
+    @apply flex space-x-1;
+  }
+  
+  .legend-cell {
+    @apply w-2 h-2 rounded-sm;
+    background-color: hsl(142, calc(var(--intensity) * 70%), calc(85% - var(--intensity) * 35%));
+  }
+  
+  .heatmap-skeleton {
+    @apply animate-pulse;
+  }
+  
+  .heatmap-error {
+    @apply text-center space-y-2 p-4 bg-red-50 rounded-lg border border-red-200;
+  }
+</style>
+```
+
+### Trend Visualization Components
+
+#### Score Trend Chart
+```svelte
+<!-- ScoreTrend.svelte -->
+<script lang="ts">
+  import { getScoreTrends } from '../routes/score-trends.remote';
+  
+  interface Props {
+    days?: number;
+    component?: 'total' | 'sleep' | 'habits' | 'mood' | 'workouts';
+  }
+  
+  let { days = 30, component = 'total' }: Props = $props();
+  
+  const trendData = getScoreTrends(days);
+</script>
+
+{#await trendData}
+  <div class="trend-skeleton">
+    <div class="h-32 bg-gray-200 rounded animate-pulse"></div>
+  </div>
+{:then data}
+  <div class="trend-chart">
+    <svg viewBox="0 0 400 120" class="w-full h-32">
+      <!-- Trend line implementation -->
+      <polyline 
+        points={data.points}
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2"
+        class="text-blue-600"
+      />
+      
+      <!-- Data points -->
+      {#each data.dataPoints as point, i}
+        <circle 
+          cx={point.x} 
+          cy={point.y} 
+          r="3"
+          class="fill-blue-600 hover:fill-blue-800 transition-colors"
+          title="{point.date}: {point.value}%"
+        />
+      {/each}
+    </svg>
+    
+    <div class="trend-summary">
+      <div class="flex justify-between text-sm text-gray-600">
+        <span>Avg: {data.average}%</span>
+        <span>Trend: {data.trend > 0 ? '↗' : data.trend < 0 ? '↘' : '→'}</span>
+      </div>
+    </div>
+  </div>
+{/await}
+
+<style>
+  .trend-chart {
+    @apply space-y-2;
+  }
+  
+  .trend-skeleton {
+    @apply animate-pulse;
+  }
+  
+  .trend-summary {
+    @apply pt-2 border-t border-gray-200;
+  }
+</style>
+```
+
+## Performance and Optimization
+
+### Advanced Caching Strategy
+- **Historical Data Caching**: Cache historical scores with smart invalidation
+- **Component-Level Caching**: Individual component data caching with TTL
+- **Optimistic Updates**: Immediate UI updates with server reconciliation
+- **Background Refresh**: Periodic data refresh without blocking UI
+
+### Bundle Optimization
+- **Code Splitting**: Route-based and component-based splitting
+- **Tree Shaking**: Eliminate unused code from final bundle
+- **Asset Optimization**: Optimized images, fonts, and static assets
+- **Critical CSS**: Inline critical styles for faster initial render
+
+### Accessibility Enhancements
+- **Screen Reader Support**: Comprehensive ARIA labels and descriptions
+- **Keyboard Navigation**: Full keyboard accessibility with logical tab order
+- **High Contrast Mode**: Support for system high contrast preferences
+- **Reduced Motion**: Respect user's motion preferences
+- **Focus Management**: Proper focus handling for dynamic content
+
+This comprehensive design provides a premium foundation for implementing the QSelf Dashboard with exceptional user experience, sophisticated visual design, and robust historical data visualization capabilities.
