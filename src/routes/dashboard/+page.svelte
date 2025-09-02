@@ -19,13 +19,22 @@
   const dayScoreData = getDayScore({ localDate: today });
 
   async function handleSignOut() {
-    const res = await signOut();
-    // Even if signOut fails, force a reload to clear client state
-    // because the source of truth is server cookies.
-    if (!res?.ok) {
-      console.error('Sign-out error:', res?.error);
+    try {
+      const result = await signOut({});
+
+      // Even if signOut fails, force a reload to clear client state
+      // because the source of truth is server cookies.
+      if (!result?.ok) {
+        console.error('Sign-out error:', result?.error);
+      }
+
+      // Redirect to home page
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign-out error:', error);
+      // Force reload anyway
+      window.location.href = '/';
     }
-    window.location.href = '/';
   }
 </script>
 
@@ -51,16 +60,18 @@
 
       <div class="flex items-center gap-4">
         <!-- Today's Score -->
-        {#if dayScoreData.current}
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm p-4">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-white leading-tight">
-                {Math.round(dayScoreData.current.total)}
+        {#await dayScoreData then score}
+          {#if score?.current}
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg shadow-sm p-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-white leading-tight">
+                  {Math.round(score.current.total)}
+                </div>
+                <div class="text-xs text-zinc-500">Today</div>
               </div>
-              <div class="text-xs text-zinc-500">Today</div>
             </div>
-          </div>
-        {/if}
+          {/if}
+        {/await}
 
         <Button
           variant="ghost"
