@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getTodaySleep } from './sleep.remote';
 import { getTodayHabits } from './habits.remote';
 import { getTodayMood } from './mood.remote';
-import { getTodayWorkouts } from './workouts.remote';
+import { getTodayWorkouts } from './workout.remote';
 
 const DashboardDataSchema = z.object({
   localDate: z.string()
