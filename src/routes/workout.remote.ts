@@ -66,56 +66,48 @@ export const getTodayWorkouts = query(LocalDateSchema, async ({ localDate }) => 
 	} as WorkoutResponse;
 });
 
+import { upsert } from '$lib/server/db/upsert';
+
 /**
  * Command function to create or update workout records supporting running and calisthenics toggles
  */
-export const upsertWorkouts = command(WorkoutSchema, async ({ localDate, runningCompleted, calisthenicsCompleted }) => {
-	// Since you're the only user, we'll use a fixed user ID
-	const userId = 'single-user';
-	
-	// Validate workout completion data
-	try {
-		validateWorkoutCompletion({ runningCompleted, calisthenicsCompleted });
-	} catch (error) {
-		throw fail(400, { message: error instanceof Error ? error.message : 'Invalid workout completion data' });
-	}
-	
-	const now = new Date();
-	
-	// Try to update existing record first
-	const updated = await db
-		.update(workoutLogs)
-		.set({
+export const upsertWorkouts = command(
+	WorkoutSchema,
+	async ({ localDate, runningCompleted, calisthenicsCompleted }) => {
+		// Since you're the only user, we'll use a fixed user ID
+		const userId = 'single-user';
+
+		// Validate workout completion data
+		try {
+			validateWorkoutCompletion({ runningCompleted, calisthenicsCompleted });
+		} catch (error) {
+			throw fail(400, {
+				message: error instanceof Error ? error.message : 'Invalid workout completion data'
+			});
+		}
+
+		const now = new Date();
+		const workoutData = {
+			userId,
+			localDate,
 			runningCompleted,
 			calisthenicsCompleted,
+			createdAt: now,
 			updatedAt: now
-		})
-		.where(and(
-			eq(workoutLogs.userId, userId),
-			eq(workoutLogs.localDate, localDate)
-		))
-		.returning();
-	
-	if (updated.length === 0) {
-		// No existing record, create new one
-		await db
-			.insert(workoutLogs)
-			.values({
-				userId,
-				localDate,
-				runningCompleted,
-				calisthenicsCompleted,
-				createdAt: now,
-				updatedAt: now
-			});
+		};
+
+		const record = await upsert(workoutLogs, workoutData, [
+			workoutLogs.userId,
+			workoutLogs.localDate
+		]);
+
+		const score = calculateWorkoutScore(record.runningCompleted, record.calisthenicsCompleted);
+
+		return {
+			runningCompleted: record.runningCompleted,
+			calisthenicsCompleted: record.calisthenicsCompleted,
+			score,
+			hasData: true
+		} as WorkoutResponse;
 	}
-	
-	const score = calculateWorkoutScore(runningCompleted, calisthenicsCompleted);
-	
-	return {
-		runningCompleted,
-		calisthenicsCompleted,
-		score,
-		hasData: true
-	} as WorkoutResponse;
-});
+);

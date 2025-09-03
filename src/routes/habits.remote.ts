@@ -116,14 +116,14 @@ export const upsertHabits = command(HabitCompletionSchema, async ({ localDate, h
 		});
 	}
 	
+import { upsert } from '$lib/server/db/upsert';
+
+// ... (existing code)
+
 	// Process each habit completion
 	const now = new Date();
-	const updatedHabits: HabitWithCompletion[] = [];
 	
 	for (const { habitId, completed } of habitCompletions) {
-		const habit = existingHabits.find(h => h.id === habitId);
-		if (!habit) continue;
-		
 		const habitLogData = {
 			userId,
 			habitId,
@@ -133,34 +133,7 @@ export const upsertHabits = command(HabitCompletionSchema, async ({ localDate, h
 			createdAt: now
 		};
 		
-		// Try to update existing record first
-		const updated = await db
-			.update(habitLogs)
-			.set({
-				completed,
-				completedAt: completed ? now : null
-			})
-			.where(and(
-				eq(habitLogs.userId, userId),
-				eq(habitLogs.habitId, habitId),
-				eq(habitLogs.localDate, localDate)
-			))
-			.returning();
-		
-		if (updated.length === 0) {
-			// No existing record, create new one
-			await db
-				.insert(habitLogs)
-				.values(habitLogData);
-		}
-		
-		updatedHabits.push({
-			id: habit.id,
-			name: habit.name,
-			weight: habit.weight || 1,
-			completed,
-			completedAt: completed ? now : null
-		});
+		await upsert(habitLogs, habitLogData, [habitLogs.userId, habitLogs.habitId, habitLogs.localDate]);
 	}
 	
 	// Get all habits with their updated completion status

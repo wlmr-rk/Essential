@@ -69,79 +69,62 @@ export const getTodaySleep = query(LocalDateSchema, async ({ localDate }) => {
 	} as SleepData;
 });
 
+import { upsert } from '$lib/server/db/upsert';
+
 /**
  * Command function to create or update sleep records
  */
-export const upsertSleep = command(SleepDataSchema, async ({ localDate, sleepStartLocal, wakeTimeLocal }) => {
-	// Since you're the only user, we'll use a fixed user ID
-	const userId = 'single-user';
-	
-	// Validate sleep times - convert errors to fail() responses
-	try {
-		validateSleepTimes(sleepStartLocal, wakeTimeLocal);
-	} catch (error) {
-		throw fail(400, { message: error instanceof Error ? error.message : 'Invalid sleep times' });
+export const upsertSleep = command(
+	SleepDataSchema,
+	async ({ localDate, sleepStartLocal, wakeTimeLocal }) => {
+		// Since you're the only user, we'll use a fixed user ID
+		const userId = 'single-user';
+
+		// Validate sleep times - convert errors to fail() responses
+		try {
+			validateSleepTimes(sleepStartLocal, wakeTimeLocal);
+		} catch (error) {
+			throw fail(400, { message: error instanceof Error ? error.message : 'Invalid sleep times' });
+		}
+
+		// Calculate duration and timestamps
+		const durationMins = calculateSleepDuration(sleepStartLocal, wakeTimeLocal, localDate);
+		const sleepStartTs = localTimeToInstant(localDate, sleepStartLocal);
+
+		// Calculate wake timestamp (handle crossing midnight)
+		let wakeTs = localTimeToInstant(localDate, wakeTimeLocal);
+		if (wakeTs.epochMilliseconds <= sleepStartTs.epochMilliseconds) {
+			const nextDay = new Date(localDate);
+			nextDay.setDate(nextDay.getDate() + 1);
+			const nextDayStr = nextDay.toISOString().split('T')[0];
+			wakeTs = localTimeToInstant(nextDayStr, wakeTimeLocal);
+		}
+
+		const sleepData = {
+			userId,
+			localDate,
+			sleepStartLocal,
+			wakeTimeLocal,
+			sleepStartTs: new Date(sleepStartTs.epochMilliseconds),
+			wakeTs: new Date(wakeTs.epochMilliseconds),
+			durationMins,
+			updatedAt: new Date(),
+			createdAt: new Date()
+		};
+
+		const record = await upsert(sleepLogs, sleepData, [sleepLogs.userId, sleepLogs.localDate]);
+
+		const score = calculateSleepScore(record.durationMins);
+
+		return {
+			id: record.id,
+			localDate: record.localDate,
+			sleepStartLocal: record.sleepStartLocal,
+			wakeTimeLocal: record.wakeTimeLocal,
+			durationMins: record.durationMins,
+			score,
+			createdAt: record.createdAt,
+			updatedAt: record.updatedAt
+		} as SleepData;
 	}
-	
-	// Calculate duration and timestamps
-	const durationMins = calculateSleepDuration(sleepStartLocal, wakeTimeLocal, localDate);
-	const sleepStartTs = localTimeToInstant(localDate, sleepStartLocal);
-	
-	// Calculate wake timestamp (handle crossing midnight)
-	let wakeTs = localTimeToInstant(localDate, wakeTimeLocal);
-	if (wakeTs.epochMilliseconds <= sleepStartTs.epochMilliseconds) {
-		const nextDay = new Date(localDate);
-		nextDay.setDate(nextDay.getDate() + 1);
-		const nextDayStr = nextDay.toISOString().split('T')[0];
-		wakeTs = localTimeToInstant(nextDayStr, wakeTimeLocal);
-	}
-	
-	const sleepData = {
-		userId,
-		localDate,
-		sleepStartLocal,
-		wakeTimeLocal,
-		sleepStartTs: new Date(sleepStartTs.epochMilliseconds),
-		wakeTs: new Date(wakeTs.epochMilliseconds),
-		durationMins,
-		updatedAt: new Date()
-	};
-	
-	// Try to update existing record first
-	const updated = await db
-		.update(sleepLogs)
-		.set(sleepData)
-		.where(and(
-			eq(sleepLogs.userId, userId),
-			eq(sleepLogs.localDate, localDate)
-		))
-		.returning();
-	
-	let record;
-	if (updated.length === 0) {
-		// No existing record, create new one
-		const inserted = await db
-			.insert(sleepLogs)
-			.values({
-				...sleepData,
-				createdAt: new Date()
-			})
-			.returning();
-		record = inserted[0];
-	} else {
-		record = updated[0];
-	}
-	
-	const score = calculateSleepScore(record.durationMins);
-	
-	return {
-		id: record.id,
-		localDate: record.localDate,
-		sleepStartLocal: record.sleepStartLocal,
-		wakeTimeLocal: record.wakeTimeLocal,
-		durationMins: record.durationMins,
-		score,
-		createdAt: record.createdAt,
-		updatedAt: record.updatedAt
-	} as SleepData;
-});
+);

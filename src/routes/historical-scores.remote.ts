@@ -2,10 +2,9 @@
 import { query } from '$app/server';
 import { db } from '$lib/server/db/client';
 import { sleepLogs, habitLogs, habits, moodLogs, workoutLogs } from '$lib/server/db/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
-import { calculateCompleteDayScore, type HabitWithCompletion } from '$lib/scoring.js';
+import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { SCORE_WEIGHTS } from '$lib/scoring.ts';
 import { Temporal } from '@js-temporal/polyfill';
-import { MANILA_TZ } from '$lib/time/index.js';
 import { z } from 'zod';
 
 // Validation schema
@@ -37,145 +36,112 @@ export interface HeatmapData {
 
 /**
  * Query function to get historical daily scores for a date range
- * Properly aggregates component scores for accurate historical data calculation
+ * This function is optimized to perform all calculations in the database
  */
-export const getHistoricalScores = query(HistoricalScoresSchema, async ({ startDate, endDate }): Promise<HeatmapData> => {
-	// Since you're the only user, we'll use a fixed user ID
-	const userId = 'single-user';
-	
-	// Validate date range
-	const startDateObj = Temporal.PlainDate.from(startDate);
-	const endDateObj = Temporal.PlainDate.from(endDate);
-	
-	if (Temporal.PlainDate.compare(startDateObj, endDateObj) > 0) {
-		throw new Error('Start date must be before or equal to end date');
-	}
-	
-	// Fetch all component data for the date range in parallel
-	const [sleepData, habitsData, habitLogsData, moodData, workoutData] = await Promise.all([
-		// Sleep data for date range
-		db.select()
-			.from(sleepLogs)
-			.where(and(
-				eq(sleepLogs.userId, userId),
-				gte(sleepLogs.localDate, startDate),
-				lte(sleepLogs.localDate, endDate)
-			)),
-		
-		// All user habits (needed for scoring calculation)
-		db.select()
-			.from(habits)
-			.where(eq(habits.userId, userId)),
-		
-		// Habit logs for date range
-		db.select()
-			.from(habitLogs)
-			.where(and(
-				eq(habitLogs.userId, userId),
-				gte(habitLogs.localDate, startDate),
-				lte(habitLogs.localDate, endDate)
-			)),
-		
-		// Mood data for date range
-		db.select()
-			.from(moodLogs)
-			.where(and(
-				eq(moodLogs.userId, userId),
-				gte(moodLogs.localDate, startDate),
-				lte(moodLogs.localDate, endDate)
-			)),
-		
-		// Workout data for date range
-		db.select()
-			.from(workoutLogs)
-			.where(and(
-				eq(workoutLogs.userId, userId),
-				gte(workoutLogs.localDate, startDate),
-				lte(workoutLogs.localDate, endDate)
-			))
-	]);
-	
-	// Create maps for efficient lookup
-	const sleepMap = new Map(sleepData.map(s => [s.localDate, s]));
-	const moodMap = new Map(moodData.map(m => [m.localDate, m]));
-	const workoutMap = new Map(workoutData.map(w => [w.localDate, w]));
-	
-	// Group habit logs by date
-	const habitLogsMap = new Map<string, typeof habitLogsData>();
-	habitLogsData.forEach(log => {
-		if (!habitLogsMap.has(log.localDate)) {
-			habitLogsMap.set(log.localDate, []);
+export const getHistoricalScores = query(
+	HistoricalScoresSchema,
+	async ({ startDate, endDate }): Promise<HeatmapData> => {
+		const userId = 'single-user';
+
+		// Validate date range
+		const startDateObj = Temporal.PlainDate.from(startDate);
+		const endDateObj = Temporal.PlainDate.from(endDate);
+		if (Temporal.PlainDate.compare(startDateObj, endDateObj) > 0) {
+			throw new Error('Start date must be before or equal to end date');
 		}
-		habitLogsMap.get(log.localDate)!.push(log);
-	});
-	
-	// Generate complete date range and calculate scores
-	const scores: HistoricalScore[] = [];
-	let currentDate = startDateObj;
-	let maxScore = 0;
-	
-	while (Temporal.PlainDate.compare(currentDate, endDateObj) <= 0) {
-		const dateStr = currentDate.toString();
-		
-		// Get data for this date
-		const sleepRecord = sleepMap.get(dateStr);
-		const moodRecord = moodMap.get(dateStr);
-		const workoutRecord = workoutMap.get(dateStr);
-		const habitLogsForDate = habitLogsMap.get(dateStr) || [];
-		
-		// Process habits data to include completion status
-		const habitsWithCompletion: HabitWithCompletion[] = habitsData.map(habit => {
-			const habitLog = habitLogsForDate.find(log => log.habitId === habit.id);
+
+		const queryResult = await db.execute(sql`
+      WITH date_series AS (
+        SELECT generate_series(
+          ${startDate}::date,
+          ${endDate}::date,
+          '1 day'::interval
+        )::date AS local_date
+      ),
+      sleep_scores AS (
+        SELECT
+          local_date,
+          CASE
+            WHEN duration_mins / 60.0 >= 7 AND duration_mins / 60.0 <= 9 THEN 100
+            WHEN duration_mins / 60.0 >= 6 AND duration_mins / 60.0 < 7 THEN 80
+            WHEN duration_mins / 60.0 > 9 AND duration_mins / 60.0 <= 10 THEN 80
+            WHEN duration_mins / 60.0 >= 5 AND duration_mins / 60.0 < 6 THEN 60
+            WHEN duration_mins / 60.0 > 10 THEN 60
+            WHEN duration_mins / 60.0 >= 4 AND duration_mins / 60.0 < 5 THEN 40
+            ELSE 20
+          END AS score
+        FROM ${sleepLogs}
+        WHERE user_id = ${userId} AND local_date BETWEEN ${startDate} AND ${endDate}
+      ),
+      habits_scores AS (
+        SELECT
+          hl.local_date,
+          (SUM(CASE WHEN hl.completed THEN h.weight ELSE 0 END) * 100.0 / SUM(h.weight))::int AS score
+        FROM ${habitLogs} hl
+        JOIN ${habits} h ON hl.habit_id = h.id
+        WHERE hl.user_id = ${userId} AND hl.local_date BETWEEN ${startDate} AND ${endDate}
+        GROUP BY hl.local_date
+      ),
+      mood_scores AS (
+        SELECT
+          local_date,
+          (((rating - 1) / 4.0) * 100)::int AS score
+        FROM ${moodLogs}
+        WHERE user_id = ${userId} AND local_date BETWEEN ${startDate} AND ${endDate}
+      ),
+      workout_scores AS (
+        SELECT
+          local_date,
+          CASE WHEN running_completed OR calisthenics_completed THEN 100 ELSE 0 END AS score
+        FROM ${workoutLogs}
+        WHERE user_id = ${userId} AND local_date BETWEEN ${startDate} AND ${endDate}
+      )
+      SELECT
+        d.local_date::text,
+        COALESCE(ss.score, 0) AS sleep_score,
+        COALESCE(hs.score, 0) AS habits_score,
+        COALESCE(ms.score, 0) AS mood_score,
+        COALESCE(ws.score, 0) AS workout_score,
+        (ss.score IS NOT NULL OR hs.score IS NOT NULL OR ms.score IS NOT NULL OR ws.score IS NOT NULL) AS has_data
+      FROM date_series d
+      LEFT JOIN sleep_scores ss ON d.local_date = ss.local_date::date
+      LEFT JOIN habits_scores hs ON d.local_date = hs.local_date::date
+      LEFT JOIN mood_scores ms ON d.local_date = ms.local_date::date
+      LEFT JOIN workout_scores ws ON d.local_date = ws.local_date::date
+      ORDER BY d.local_date
+    `);
+
+		let maxScore = 0;
+		const scores = (queryResult as any[]).map((row) => {
+			const breakdown = {
+				sleep: row.sleep_score,
+				habits: row.habits_score,
+				mood: row.mood_score,
+				workouts: row.workout_score
+			};
+			const totalScore = Math.round(
+				breakdown.sleep * SCORE_WEIGHTS.sleep +
+					breakdown.habits * SCORE_WEIGHTS.habits +
+					breakdown.mood * SCORE_WEIGHTS.mood +
+					breakdown.workouts * SCORE_WEIGHTS.workouts
+			);
+
+			if (totalScore > maxScore) {
+				maxScore = totalScore;
+			}
+
 			return {
-				id: habit.id,
-				name: habit.name,
-				weight: habit.weight || 1,
-				completed: habitLog?.completed || false,
-				completedAt: habitLog?.completedAt || null
+				localDate: row.local_date,
+				totalScore,
+				breakdown,
+				hasData: row.has_data
 			};
 		});
-		
-		// Prepare input for score calculation
-		const scoreInput = {
-			sleepDurationMins: sleepRecord?.durationMins,
-			habits: habitsWithCompletion.length > 0 ? habitsWithCompletion : undefined,
-			moodRating: moodRecord?.rating,
-			runningCompleted: workoutRecord?.runningCompleted ?? undefined,
-			calisthenicsCompleted: workoutRecord?.calisthenicsCompleted ?? undefined
+
+		return {
+			scores,
+			dateRange: { start: startDate, end: endDate },
+			maxScore: maxScore || 100 // Default to 100 if no scores exist
 		};
-		
-		// Check if any data exists for this date
-		const hasData = !!(
-			sleepRecord || 
-			moodRecord || 
-			workoutRecord || 
-			habitLogsForDate.length > 0
-		);
-		
-		// Calculate score if any data exists
-		const dayScore = hasData ? calculateCompleteDayScore(scoreInput) : null;
-		
-		const historicalScore: HistoricalScore = {
-			localDate: dateStr,
-			totalScore: dayScore?.total || 0,
-			breakdown: dayScore?.breakdown || { sleep: 0, habits: 0, mood: 0, workouts: 0 },
-			hasData
-		};
-		
-		scores.push(historicalScore);
-		
-		// Track max score for visualization scaling
-		if (dayScore?.total && dayScore.total > maxScore) {
-			maxScore = dayScore.total;
-		}
-		
-		// Move to next day
-		currentDate = currentDate.add({ days: 1 });
 	}
-	
-	return {
-		scores,
-		dateRange: { start: startDate, end: endDate },
-		maxScore: maxScore || 100 // Default to 100 if no scores exist
-	};
-});
+);

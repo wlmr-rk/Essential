@@ -59,52 +59,37 @@ export const getTodayMood = query(LocalDateSchema, async ({ localDate }) => {
 	} as MoodResponse;
 });
 
+import { upsert } from '$lib/server/db/upsert';
+
 /**
  * Command function to create or update mood record with 1-5 scale validation
  */
 export const upsertMood = command(MoodSchema, async ({ localDate, rating }) => {
 	// Since you're the only user, we'll use a fixed user ID
 	const userId = 'single-user';
-	
+
 	// Validate mood rating
 	try {
 		validateMoodRating(rating);
 	} catch (error) {
 		throw fail(400, { message: error instanceof Error ? error.message : 'Invalid mood rating' });
 	}
-	
+
 	const now = new Date();
-	
-	// Try to update existing record first
-	const updated = await db
-		.update(moodLogs)
-		.set({
-			rating,
-			updatedAt: now
-		})
-		.where(and(
-			eq(moodLogs.userId, userId),
-			eq(moodLogs.localDate, localDate)
-		))
-		.returning();
-	
-	if (updated.length === 0) {
-		// No existing record, create new one
-		await db
-			.insert(moodLogs)
-			.values({
-				userId,
-				localDate,
-				rating,
-				createdAt: now,
-				updatedAt: now
-			});
-	}
-	
-	const score = calculateMoodScore(rating);
-	
-	return {
+	const moodData = {
+		userId,
+		localDate,
 		rating,
+		createdAt: now,
+		updatedAt: now
+	};
+
+	const record = await upsert(moodLogs, moodData, [moodLogs.userId, moodLogs.localDate]);
+
+	const score = calculateMoodScore(record.rating);
+
+	return {
+		rating: record.rating,
 		score,
 		hasData: true
 	} as MoodResponse;
