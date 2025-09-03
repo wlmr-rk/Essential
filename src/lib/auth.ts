@@ -1,39 +1,7 @@
 // src/lib/auth.ts
 import type { RequestEvent } from '@sveltejs/kit';
 
-/**
- * Get the current session from cookies
- */
-export async function getSessionFromCookies(event: RequestEvent) {
-  const {
-    data: { session },
-    error
-  } = await event.locals.supabase.auth.getSession();
 
-  if (error) {
-    console.error('Session error:', error);
-    return { session: null, error: error.message };
-  }
-
-  return { session, error: null };
-}
-
-/**
- * Get the current user from cookies
- */
-export async function getUserFromCookies(event: RequestEvent) {
-  const {
-    data: { user },
-    error
-  } = await event.locals.supabase.auth.getUser();
-
-  if (error) {
-    console.error('User error:', error);
-    return { user: null, error: error.message };
-  }
-
-  return { user, error: null };
-}
 
 /**
  * Sign in with GitHub OAuth
@@ -41,15 +9,18 @@ export async function getUserFromCookies(event: RequestEvent) {
 export async function signInWithGitHub(event: RequestEvent, redirectPath: string = '/dashboard') {
   const { locals: { supabase }, url } = event;
 
-  // Build absolute redirect URL
-  const redirectTo = new URL(
-    redirectPath.trim().replace(/\s+/g, ''),
-    url.origin
-  ).toString();
+  // The callback URL that Supabase will redirect to after authentication
+  const callbackUrl = new URL('/auth/callback', url.origin);
+
+  // The `next` parameter will be used by the callback to redirect the user
+  // to the correct page after the session is created.
+  callbackUrl.searchParams.set('next', redirectPath);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
-    options: { redirectTo }
+    options: {
+      redirectTo: callbackUrl.toString()
+    }
   });
 
   if (error) {

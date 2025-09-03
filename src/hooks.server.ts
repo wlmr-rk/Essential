@@ -9,7 +9,6 @@ export const handle: Handle = async ({ event, resolve }) => {
     cookies: {
       getAll: () => event.cookies.getAll(),
       setAll: (cookiesToSet) => {
-        console.log('Setting cookies:', cookiesToSet);
         for (const { name, value, options } of cookiesToSet) {
           event.cookies.set(name, value, { ...options, path: '/' });
         }
@@ -17,11 +16,13 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   });
 
-  event.locals.getSession = async () => {
+
+
+  event.locals.getUser = async () => {
     const {
-      data: { session },
-    } = await event.locals.supabase.auth.getSession();
-    return session;
+      data: { user },
+    } = await event.locals.supabase.auth.getUser();
+    return user;
   };
 
   return resolve(event, {
