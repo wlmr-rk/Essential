@@ -10,7 +10,7 @@
   import { getDayScore } from '../day-score.remote.js';
   import { getTodayLocalDate } from '$lib/time/index.js';
   import { Power, TrendingUp } from '@lucide/svelte';
-  import { signOut } from '../login.remote.js';
+  import { signOut } from '../login.remote';
 
   // Get current date for display
   const today = getTodayLocalDate();
