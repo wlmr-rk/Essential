@@ -4,8 +4,9 @@ import { db } from '$lib/server/db/client';
 import { habits, habitLogs } from '$lib/server/db/schema';
 import { calculateHabitsScore, validateHabitCompletions, type HabitWithCompletion } from '$lib/scoring.js';
 import { fail } from '@sveltejs/kit';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { upsert } from '$lib/server/db/upsert';
 
 // Validation schemas
 const LocalDateSchema = z.object({
@@ -89,59 +90,61 @@ export const getTodayHabits = query(LocalDateSchema, async ({ localDate }) => {
  * Co
 mmand function to update habit completion status with weighted habit support
  */
-export const upsertHabits = command(HabitCompletionSchema, async ({ localDate, habitCompletions }) => {
-	// Since you're the only user, we'll use a fixed user ID
-	const userId = 'single-user';
-	
-	// Validate habit completions data
-	try {
-		validateHabitCompletions(habitCompletions);
-	} catch (error) {
-		throw fail(400, { message: error instanceof Error ? error.message : 'Invalid habit completion data' });
-	}
-	
-	// Validate that all habit IDs exist and belong to the user
-	const habitIds = habitCompletions.map(hc => hc.habitId);
-	const existingHabits = await db
-		.select()
-		.from(habits)
-		.where(eq(habits.userId, userId));
-	
-	const existingHabitIds = new Set(existingHabits.map(h => h.id));
-	const invalidHabitIds = habitIds.filter(id => !existingHabitIds.has(id));
-	
-	if (invalidHabitIds.length > 0) {
-		throw fail(400, { 
-			message: `Invalid habit IDs: ${invalidHabitIds.join(', ')}` 
-		});
-	}
-	
-import { upsert } from '$lib/server/db/upsert';
+export const upsertHabits = command(
+	HabitCompletionSchema,
+	async ({ localDate, habitCompletions }) => {
+		// Since you're the only user, we'll use a fixed user ID
+		const userId = 'single-user';
 
-// ... (existing code)
+		// Validate habit completions data
+		try {
+			validateHabitCompletions(habitCompletions);
+		} catch (error) {
+			throw fail(400, {
+				message: error instanceof Error ? error.message : 'Invalid habit completion data'
+			});
+		}
 
-	// Process each habit completion
-	const now = new Date();
-	
-	for (const { habitId, completed } of habitCompletions) {
-		const habitLogData = {
+		// Validate that all habit IDs exist and belong to the user
+		const habitIds = habitCompletions.map((hc) => hc.habitId);
+		const existingHabits = await db.select().from(habits).where(eq(habits.userId, userId));
+
+		const existingHabitIds = new Set(existingHabits.map((h) => h.id));
+		const invalidHabitIds = habitIds.filter((id) => !existingHabitIds.has(id));
+
+		if (invalidHabitIds.length > 0) {
+			throw fail(400, {
+				message: `Invalid habit IDs: ${invalidHabitIds.join(', ')}`
+			});
+		}
+
+		const now = new Date();
+		const habitLogData = habitCompletions.map(({ habitId, completed }) => ({
 			userId,
 			habitId,
 			localDate,
 			completed,
 			completedAt: completed ? now : null,
-			createdAt: now
-		};
-		
-		await upsert(habitLogs, habitLogData, [habitLogs.userId, habitLogs.habitId, habitLogs.localDate]);
-	}
-	
-	// Get all habits with their updated completion status
-	const allHabits = await db
-		.select()
-		.from(habits)
-		.where(eq(habits.userId, userId))
-		.orderBy(habits.name);
+			createdAt: now,
+			updatedAt: now
+		}));
+
+		if (habitLogData.length > 0) {
+			await db
+				.insert(habitLogs)
+				.values(habitLogData)
+				.onConflictDoUpdate({
+					target: [habitLogs.userId, habitLogs.habitId, habitLogs.localDate],
+					set: {
+						completed: sql`excluded.completed`,
+						completedAt: sql`excluded.completed_at`,
+						updatedAt: now
+					}
+				});
+		}
+
+		// Get all habits with their updated completion status
+		const allHabits = await db.select().from(habits).where(eq(habits.userId, userId)).orderBy(habits.name);
 	
 	const allCompletions = await db
 		.select()
